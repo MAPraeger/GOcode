@@ -1,0 +1,347 @@
+#Openstreetmap und R
+
+library(osmar)
+
+#Karte <- get_osm(corner_bbox(11.569, 48.147, 11.575, 48.151))
+#Struktur: center_bbox(center_lon, center_lat, width, height)
+
+circle2square <- function(center = c(0,0),radius = 1){
+	r_x <- radius/(111120*cos(pi/(180/center[2])))
+	r_y <- (radius/(111120*cos(pi/(180/center[2])))) * cos(pi/(180/center[2]))
+	top <- c(center[1],center[2]+r_y)
+	bottom <- c(center[1],center[2]-r_y)
+	left <- c(center[1]-r_x,center[2])
+	right <- c(center[1]+r_x,center[2])
+	top_left <- c(center[1]-r_x,center[2]+r_y)
+	top_right <- c(center[1]+r_x,center[2]+r_y)
+	bottom_left <- c(center[1]-r_x,center[2]-r_y)
+	bottom_right <- c(center[1]+r_x,center[2]-r_y)
+	return(data.frame(x = c(bottom_left[1], top_left[1], top_right[1], bottom_right[1]), y = c(bottom_left[2], top_left[2], top_right[2], bottom_right[2])))
+}
+
+circle2square(center = c(11.571933,48.148971), radius = 200)
+Karte <- get_osm(corner_bbox(11.56924, 48.14717, 11.57463, 48.15077))
+
+#Pruefen, welche Kategorien vorkommen
+categories1 <- c("highway", "sidewalk", "cycleway", "busway", "abutters", "bicycle_road", "driving_side", "ford", "ice_road", "incline", "junction", "lanes", "lit", "motorroad", "mountain_pass", "mtb:scale", "mtb_scale_uphill", "mtb:scale:imba", "mtb:description", "overtaking", "parking:condition", "parking:lane", "passing_places", "sac_scale", "service", "surface", "tactile_paving", "tracktype", "traffic_calming", "trail_visibility", "winter_road", "barrier", "cycleway", "waterway", "intermittent", "seasonal", "lock", "mooring", "service", "tunnel", "railway", "bridge", "cutting", "electrified", "embankment", "frequency", "railway:track_ref", "service", "tracks", "tunnel", "usage", "voltage", "public_transport", "landuse", "aeroway", "aerialway", "power", "line", "man_made", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", )
+categories2 <- c("highway", "sidewalk", "cycleway", "barrier", "waterway", "railway", "aeroway", "aerialway", "power", "man_made")
+categories3 <- c("leisure", "amenity", "shop", "office", "vending", "tourism", "landuse", "natural", "sport")
+
+
+#Eine Liste Herstellen mit einer Ein-Variablenmatrix pro Listeneintrag
+
+data_part <- matrix(0, 1, length(Karte$nodes$tags[1,]))
+
+Liste <- list()
+j <- 1
+data_part <- Karte$nodes$tags[1,]
+
+for(i in 1:(length(Karte$nodes$tags[,1])-1)){
+
+if(Karte$nodes$tags[i,1] != Karte$nodes$tags[i+1,1]){
+Liste[[j]] <- data_part
+data_part <- matrix(0, 1, length(Karte$nodes$tags[1,]))
+colnames(data_part) <- c("id", "k", "v")
+j <- j+1
+}
+data_part <- rbind(data_part,Karte$nodes$tags[i+1,])
+if(data_part[1,1]==0)
+data_part <- data_part[-1,]
+}
+
+
+
+Typ_amenity <- 0
+Typ_leisure <- 0
+Typ_sport <- 0
+Typ_shop <- 0
+Typ_vending <- 0
+Typ_landuse <- 0
+Typ_natural <- 0
+Typ_craft <- 0
+Typ_tourism <- 0
+Typ_highway <- 0
+Typ_railway <- 0
+Typ_aeroway <- 0
+
+
+Name <- 0
+Koordinaten <- 0
+Strasse <- 0
+Hausnummer <- 0
+Postleitzahl <- 0
+ID <- 0
+Latitude <- 0
+Longitude <- 0
+
+for (i in 1:length(Liste)){
+Typ_amenity[i] <- 0
+Typ_leisure[i] <- 0
+Typ_sport[i] <- 0
+Typ_shop[i] <- 0
+Typ_vending[i] <- 0
+Typ_landuse[i] <- 0
+Typ_natural[i] <- 0
+Typ_craft[i] <- 0
+Typ_tourism[i] <- 0
+Typ_highway[i] <- 0
+Typ_railway[i] <- 0
+Typ_aeroway[i] <- 0
+Name[i] <- 0
+Koordinaten[i] <- 0
+Strasse[i] <- 0
+Hausnummer[i] <- 0
+Postleitzahl[i] <- 0
+ID[i] <- 0
+Latitude[i] <- 0
+Longitude[i] <- 0
+}
+
+#vgl Masterarbeit
+#Wert aus einer Spalte von der bestimmten Zeile nehmen,
+#bei der in einer anderen Spalte ein bestimmter Wert vorliegt
+
+for (i in 1:length(Liste)){
+if("amenity" %in% Liste[[i]][,2]){
+Typ_amenity[i] <- Liste[[i]][,3][Liste[[i]][,2]=="amenity"]
+}
+if("leisure" %in% Liste[[i]][,2]){
+Typ_leisure[i] <- Liste[[i]][,3][Liste[[i]][,2]=="leisure"]
+}
+if("sport" %in% Liste[[i]][,2]){
+Typ_sport[i] <- Liste[[i]][,3][Liste[[i]][,2]=="sport"]
+}
+if("shop" %in% Liste[[i]][,2]){
+Typ_shop[i] <- Liste[[i]][,3][Liste[[i]][,2]=="shop"]
+}
+if("vending" %in% Liste[[i]][,2]){
+Typ_vending[i] <- Liste[[i]][,3][Liste[[i]][,2]=="vending"]
+}
+if("landuse" %in% Liste[[i]][,2]){
+Typ_landuse[i] <- Liste[[i]][,3][Liste[[i]][,2]=="landuse"]
+}
+if("natural" %in% Liste[[i]][,2]){
+Typ_natural[i] <- Liste[[i]][,3][Liste[[i]][,2]=="natural"]
+}
+if("craft" %in% Liste[[i]][,2]){
+Typ_craft[i] <- Liste[[i]][,3][Liste[[i]][,2]=="craft"]
+}
+if("tourism" %in% Liste[[i]][,2]){
+Typ_tourism[i] <- Liste[[i]][,3][Liste[[i]][,2]=="tourism"]
+}
+if("highway" %in% Liste[[i]][,2]){
+Typ_highway[i] <- Liste[[i]][,3][Liste[[i]][,2]=="highway"]
+}
+if("railway" %in% Liste[[i]][,2]){
+Typ_railway[i] <- Liste[[i]][,3][Liste[[i]][,2]=="railway"]
+}
+if("aeroway" %in% Liste[[i]][,2]){
+Typ_aeroway[i] <- Liste[[i]][,3][Liste[[i]][,2]=="aeroway"]
+}
+if("name" %in% Liste[[i]][,2]){
+Name[i] <- Liste[[i]][,3][Liste[[i]][,2]=="name"]
+}
+if("addr:street" %in% Liste[[i]][,2]){
+Strasse[i] <- Liste[[i]][,3][Liste[[i]][,2]=="addr:street"]
+}
+if("addr:housenumber" %in% Liste[[i]][,2]){
+Hausnummer[i] <- Liste[[i]][,3][Liste[[i]][,2]=="addr:housenumber"]
+}
+if("addr:postcode" %in% Liste[[i]][,2]){
+Postleitzahl[i] <- Liste[[i]][,3][Liste[[i]][,2]=="addr:postcode"]
+}
+ID[i] <- Liste[[i]][1,1]
+}
+
+for (i in 1:length(ID)){
+Latitude[i] <- Karte$nodes$attrs[,8][Karte$nodes$attrs[,1]==ID[i]]
+Longitude[i] <- Karte$nodes$attrs[,9][Karte$nodes$attrs[,1]==ID[i]]
+}
+
+#Daten_gesamt <- cbind(ID, Typ_amenity, Typ_leisure, Typ_sport, Typ_shop, Typ_vending, Typ_landuse, Typ_natural, Typ_craft, Typ_tourism, Typ_highway, Typ_railway, Typ_aeroway, Name, Koordinaten, Strasse, Hausnummer, Postleitzahl)
+Daten_gesamt <- data.frame(Name, Typ_amenity, Typ_leisure, Typ_sport, Typ_shop, Typ_vending, Typ_landuse, Typ_natural, Typ_craft, Typ_tourism, Typ_highway, Typ_railway, Typ_aeroway, Latitude, Longitude, Strasse, Hausnummer, Postleitzahl)
+
+
+#Eintraege durcheinander => sortieren
+#Alternative, da viel vermutlich geloescht wird: direkt die Zeilen rauslesen
+#Achtung: manche Punkte koennten gar keinen Typ haben
+#diese fallen im folgenden Code erst einmal weg
+#ggf ist hier noch einmal eine Textsuche noetig
+
+
+Daten_amenity <- Daten_gesamt[order(Typ_amenity),]
+Daten_amenity <- Daten_amenity[(Daten_amenity[,2] != "0"),]
+Daten_amenity <- Daten_amenity[,(-3):(-13)]
+colnames(Daten_amenity)[2] <- "Typ"
+
+Daten_leisure <- Daten_gesamt[order(Typ_leisure),]
+Daten_leisure <- Daten_leisure[(Daten_leisure[,3] != "0"),]
+Daten_leisure <- Daten_leisure[,(-4):(-13)]
+Daten_leisure <- Daten_leisure[,-2]
+colnames(Daten_leisure)[2] <- "Typ"
+
+Daten_sport <- Daten_gesamt[order(Typ_sport),]
+Daten_sport <- Daten_sport[(Daten_sport[,4] != "0"),]
+Daten_sport <- Daten_sport[,(-5):(-13)]
+Daten_sport <- Daten_sport[,(-2):(-3)]
+colnames(Daten_sport)[2] <- "Typ"
+
+Daten_shop <- Daten_gesamt[order(Typ_shop),]
+Daten_shop <- Daten_shop[(Daten_shop[,5] != "0"),]
+Daten_shop <- Daten_shop[,(-6):(-13)]
+Daten_shop <- Daten_shop[,(-2):(-4)]
+colnames(Daten_shop)[2] <- "Typ"
+
+Daten_vending <- Daten_gesamt[order(Typ_vending),]
+Daten_vending <- Daten_vending[(Daten_vending[,6] != "0"),]
+Daten_vending <- Daten_vending[,(-7):(-13)]
+Daten_vending <- Daten_vending[,(-2):(-5)]
+colnames(Daten_vending)[2] <- "Typ"
+
+Daten_landuse <- Daten_gesamt[order(Typ_landuse),]
+Daten_landuse <- Daten_landuse[(Daten_landuse[,7] != "0"),]
+Daten_landuse <- Daten_landuse[,(-8):(-13)]
+Daten_landuse <- Daten_landuse[,(-2):(-6)]
+colnames(Daten_landuse)[2] <- "Typ"
+
+Daten_natural <- Daten_gesamt[order(Typ_natural),]
+Daten_natural <- Daten_natural[(Daten_natural[,8] != "0"),]
+Daten_natural <- Daten_natural[,(-9):(-13)]
+Daten_natural <- Daten_natural[,(-2):(-7)]
+colnames(Daten_natural)[2] <- "Typ"
+
+Daten_craft <- Daten_gesamt[order(Typ_leisure),]
+Daten_craft <- Daten_craft[(Daten_craft[,9] != "0"),]
+Daten_craft <- Daten_craft[,(-10):(-13)]
+Daten_craft <- Daten_craft[,(-2):(-8)]
+colnames(Daten_craft)[2] <- "Typ"
+
+Daten_tourism <- Daten_gesamt[order(Typ_tourism),]
+Daten_tourism <- Daten_tourism[(Daten_tourism[,10] != "0"),]
+Daten_tourism <- Daten_tourism[,(-11):(-13)]
+Daten_tourism <- Daten_tourism[,(-2):(-9)]
+colnames(Daten_tourism)[2] <- "Typ"
+
+Daten_highway <- Daten_gesamt[order(Typ_highway),]
+Daten_highway <- Daten_highway[(Daten_highway[,11] != "0"),]
+Daten_highway <- Daten_highway[,(-12):(-13)]
+Daten_highway <- Daten_highway[,(-2):(-10)]
+colnames(Daten_highway)[2] <- "Typ"
+
+Daten_railway <- Daten_gesamt[order(Typ_railway),]
+Daten_railway <- Daten_railway[(Daten_railway[,12] != "0"),]
+Daten_railway <- Daten_railway[,-13]
+Daten_railway <- Daten_railway[,(-2):(-11)]
+colnames(Daten_railway)[2] <- "Typ"
+
+Daten_aeroway <- Daten_gesamt[order(Typ_aeroway),]
+Daten_aeroway <- Daten_aeroway[(Daten_aeroway[,13] != "0"),]
+Daten_aeroway <- Daten_aeroway[,(-2):(-12)]
+colnames(Daten_aeroway)[2] <- "Typ"
+
+
+Daten_sortiert <- rbind(Daten_amenity,Daten_leisure,Daten_sport,Daten_shop,Daten_vending,Daten_landuse,Daten_natural,Daten_craft,Daten_tourism,Daten_highway,Daten_railway,Daten_aeroway)
+
+Variablen <- names(summary(factor(Daten_sortiert$Typ)))
+
+#ggf. dann jedes Mal neu entscheiden, welche Variable(n) davon geplottet werden soll(en)
+#bzw. mit einer vordefinierten Variablenliste arbeiten (hier erst einmal alle)
+
+var_aim <- c("bar", "bbq", "biergarten", "cafe", "fast_food", "food_court", "ice_cream", "pub", "restaurant", "college", "school", "bicycle_parking", "bicycle_rental", "boat_sharing", "bus_station", "motorcycle_parking", "parking", "taxi", "clinic", "dentist", "doctors", "hospital", "nursing_home", "pharmacy", "dive_centre", "dojo", "hunting_stand", "kneipp_water_cure", "marketplace", "ranger_station", "vending_machine", "beach_resort", "dance", "dog_park", "fishing", "fitness_centre", "garden", "golf_course", "ice_rink", "nature_reserve", "park", "pitch", "playground", "sports_centre", "stadium", "swimming_area", "swimming_pool", "track", "water_park", "9pin", "10pin", "american_football", "aikido", "archery", "athletics", "australian_football", "badminton", "bandy", "base", "baseball", "basketball", "beachvolleyball", "billiards", "bmx", "bobsleigh", "boules", "bowls", "boxing", "canadian_football", "canoe", "chess", "cliff_diving", "climbing", "climbing_adventure", "cockfighting", "cricket", "croquet", "curling", "cycling", "darts", "dog_racing", "equestrian", "fencing", "field_hockey", "free_flying", "gaelic_games", "golf", "gymnastics", "handball", "hapkido", "horseshoes", "horse_racing", "ice_hockey", "ice_skating", "ice_stock", "judo", "karting", "kitesurfing", "korfball", "multi", "netball", "obstacle_course", "orienteering", "paddle_tennis", "parachuting", "paragliding", "pelota", "racquet", "roller_skating", "rowing", "rugby_league", "rugby_union", "running", "sailing", "scuba_diving", "shooting", "skateboard", "soccer", "sumo", "surfing", "swimming", "table_tennis", "taekwondo", "tennis", "toboggan", "volleyball", "water_polo", "water_ski", "weightlifting", "wrestling", "yoga", "allotments", "farmland", "farmyard", "forest", "grass", "greenfield", "greenhouse_horticulture", "meadow", "orchard", "plant_nursery", "recreation_ground", "village_green", "vineyard", "wood", "tree_row", "tree", "scrub", "grassland", "fell", "water", "therapist", "bakery", "beverages", "butcher", "cheese", "chocolate", "coffee", "confectionery", "convenience", "deli", "dairy", "farm", "greengrocer", "ice_cream", "pasta", "pastry", "seafood", "spices", "tea", "wine", "supermarket", "medical_supply", "nutrition_supplements", "garden_centre", "garden_furniture", "bicycle", "fishing", "free_flying", "hunting", "outdoor", "scuba_diving", "sports", "swimming_pool", "bicycle_tube", "bread", "chemist", "chewing_gums", "coffee", "drinks", "first_aid", "fishing_tackle", "food", "ice_cream", "milk", "sweets", "bakery", "caterer", "aquarium", "camp_site", "picnic_site", "theme_park", "bus_stop", "rest_area", "station", "heliport", "aerodrome")
+
+Daten_var <- matrix(0, 1, length(Daten_sortiert))
+colnames(Daten_var)[1:7] <- c("Name", "Typ", "Latitude", "Longitude", "Strasse", "Hausnummer", "Postleitzahl")
+
+for (i in 1:length(var_aim)){
+Daten_var <- rbind(Daten_var,Daten_sortiert[Daten_sortiert[,2] == var_aim[i],])
+}
+
+Daten_var <- Daten_var[-1,]
+
+Daten_var_geloescht <- Daten_var[(Daten_var[,4]>=11.56924)&(Daten_var[,4]<=11.57463)&(Daten_var[,3]>=48.14717)&(Daten_var[,3]<=48.15077),]
+
+
+library(xlsx)
+write.xlsx(Daten_var_geloescht, file="H:/Gispro/Grafiken/Daten_OSM_Theresien.xls")
+
+
+Box_plot <- data.frame(x = c(11.56924, 11.56924, 11.57463, 11.57463, 11.56924), y = c(48.14717, 48.15077, 48.15077, 48.14717, 48.14717))
+
+
+library(ggmap)
+
+Theresien_map = ggmap(get_googlemap(center=c(11.571933, 48.148971), zoom=16, maptype = "satellite"), extent="normal")
+
+Theresien_map + theme_bw() + geom_point(data=Daten_var, aes(x=Longitude,y=Latitude, shape = Daten_var$Typ), colour = "blue") + scale_shape_manual(values=c(1:25,33:(33+nlevels(Daten_var$Typ)-25))) + geom_density2d(data=Daten_var, aes(x=Longitude, y=Latitude), color = "black", size = 1) + geom_polygon(data=Box_plot, aes(x=x, y=y), fill = "yellow", alpha = 0.3)
+
+Theresien_map + theme_bw() + geom_point(data=Daten_var_geloescht, aes(x=Longitude,y=Latitude, shape = Daten_var_geloescht$Typ), colour = "blue", size = 1.5) + scale_shape_manual(values=c(1:25,33:(33+nlevels(Daten_var_geloescht$Typ)-25)), name = "Variables") + geom_density2d(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude), color = "black", size = 1) + geom_polygon(data=Box_plot, aes(x=x, y=y), fill = "white", alpha = 0.3) + theme(legend.text=element_text(size=12), legend.title=element_text(size = 14, face = "bold"))
+
+
+#Erlaubnis zur Verwendung einer Google-Karte fuer OSM-Daten fraglich
+
+
+library(OpenStreetMap)
+
+Theresien_map_osm <- openmap(c(48.1515,11.568),c(48.1465,11.576),type="osm")
+Theresien_map_bing <- openmap(c(48.1515,11.568),c(48.1465,11.576),type="bing")
+
+#Punkte auf dieser Karte plotten funktioniert nicht
+#daher besser weg ueber manuelle Speicherung einer Karte aus OSM
+
+Theresien_map_osm <- get_map(location = c(lon = 11.571933, lat = 48.148971), source = "osm")
+#war frueher moeglich, muss allerdings jetzt manuell heruntergeladen werden
+
+Box_plot <- data.frame(x = c(11.56924, 11.56924, 11.57463, 11.57463, 11.56924), y = c(48.14717, 48.15077, 48.15077, 48.14717, 48.14717))
+
+#Download der Karte von Theresien
+#Eckdaten
+#left:11.568, right:11.576, top:48.1515, down:48.1465
+#zum Vergleich die BBOX: 11.569, 48.147, 11.575, 48.151
+
+library(png)
+OSM_png <- readPNG("H:/Gispro/Daten/Karte_Theresien.png")
+
+
+#Moeglichkeit1 ueber die Plot-Funktion
+
+library(MASS)
+
+#Karte auf die Koordinaten skalieren
+plot(c(11.5675, 11.579), c(48.1464, 48.1516), type='n', main="", xlab="Longitude", ylab="Latitude", cex.lab=1.7)
+rasterImage(OSM_png, 11.568, 48.1465, 11.576, 48.1515)
+points(Daten_var_geloescht$Longitude, Daten_var_geloescht$Latitude, pch=c(1:25,33:40)[factor(Daten_var_geloescht$Typ)], cex = 2, lwd = 3)
+legend(11.576, 48.151, legend=names(summary(factor(Daten_var_geloescht$Typ))), pch=c(1:25,33:40), cex=1.7)
+polygon(Box_plot, col=rgb(1, 0, 0,0.2), lwd = 2)
+contour(kde2d(Daten_var_geloescht$Longitude, Daten_var_geloescht$Latitude), add = TRUE, lwd = 2, col = "blue")
+text(11.574, 48.1467, "© OpenStreetMap contributors", fg="white", cex = 2)
+
+#Karte ist hier richtig mit den entsprechendne Koordinaten verankert
+#allerdings muss hier das Seitenverhaeltnis im Fenster noch angepasst werden
+
+
+#Moeglichkeit2 ueber ggplot
+
+library(ggplot2)
+library(grid)
+
+Box <- data.frame(x = c(11.56924, 11.56924, 11.57463, 11.57463), y = c(48.14717, 48.15077, 48.15077, 48.14717))
+Box2 <- data.frame(x = c(11.568, 11.568, 11.576, 11.576), y = c(48.1465, 48.1515, 48.1515, 48.1465))
+
+
+Karte_Raster <- rasterGrob(OSM_png, interpolate=TRUE)
+ggplot(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude)) + annotation_custom(Karte_Raster, xmin=11.568, xmax=11.576, ymin=48.1465, ymax=48.1515) + geom_point(data=Daten_var_geloescht, aes(x=Longitude,y=Latitude, shape = Daten_var_geloescht$Typ), colour = "blue", size = 3) + scale_shape_manual(values=c(1:25,33:60), name = "Variables") + geom_density2d(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude), color = "black", size = 1) + geom_polygon(data=Box2, aes(x=x, y=y), fill = "white", alpha = 0.01) + geom_polygon(data=Box, aes(x=x, y=y), fill = "yellow", alpha = 0.3) + theme(legend.text=element_text(size=14), legend.title=element_text(size = 16, face = "bold")) + annotate("text", x=11.57475, y= 48.1466, label= "© OpenStreetMap contributors", size=5)
+
+
+#Grafik schoen gross
+ggplot(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude)) + annotation_custom(Karte_Raster, xmin=11.568, xmax=11.576, ymin=48.1465, ymax=48.1515) + geom_point(data=Daten_var_geloescht, aes(x=Longitude,y=Latitude, shape = Daten_var_geloescht$Typ), colour = "blue", size = 5) + scale_shape_manual(values=c(1:25,33:60), name = "Variables") + geom_polygon(data=Box2, aes(x=x, y=y), fill = "white", alpha = 0.01) + geom_polygon(data=Box, aes(x=x, y=y), fill = "yellow", alpha = 0.3) + theme(legend.text=element_text(size=22), legend.title=element_text(size = 20, face = "bold"), legend.key.size = unit(1.5, "cm")) + annotate("text", x=11.57475, y= 48.1466, label= "© OpenStreetMap contributors", size=5)
+
+
+#hier ist die Karte bei den Kordinaten nicht richtig verankert
+#anpassen des Seitenverhaeltnisses loest dieses Problem wohl auch !?
+
+#Box2 (auessere behelfsmaessige Box) ist noetig, da sonst die Dichteschaetzungen abgeschnitten werden
+#Box begrenzt nach wie vor das Suchgebiet
+#Am Fenster ggf..manuell nachjustieren, bis die Karte in den Koordinatenpunkten
+#richtig drin ist
+
+
