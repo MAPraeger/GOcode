@@ -1,0 +1,172 @@
+#Code as a basis for the validation templates and for Figure 3 of the study
+#Using data of online geocoding services for the assessment
+#of environmental obesogenic factors: A feasibility study
+
+library(geojsonR)
+
+#please download the OSM data from https://overpass-turbo.eu/ in GeoJSON format
+#Code can be found within the file "Overpass query within this project"
+#insert the path to the data on your hard drive between the quotation marks and ensure that the path contains .geojson at the end
+gj_file <- FROM_GeoJson(url_file_string = "")
+
+categories <- c("amenity","leisure","sport","landuse","natural","office","shop","vending","craft","tourism","highway","railway","aeroway")
+
+for(a in categories)
+eval(parse(text=paste0("Type_",a," <- 0")))
+
+categories2 <- c("Name","Coordinates","Street","House_number","ZIP_code")
+
+for(a in categories2)
+eval(parse(text=paste0("",a," <- 0")))
+
+
+for(k in 1:length(gj_file$features)){
+
+for(a in categories)
+eval(parse(text=paste0("Type_",a,"[k] <- 0")))
+
+for(a in categories2)
+eval(parse(text=paste0("",a,"[k] <- 0")))
+
+}
+
+
+for(k in 1:length(gj_file$features)){
+
+for(a in categories)
+eval(parse(text=paste0("if(!is.null(gj_file$features[[k]]$properties$",a,")){\nType_",a,"[k] <- gj_file$features[[k]]$properties$",a,"\n}")))
+
+if(!is.null(gj_file$features[[k]]$properties$name)){
+Name[k] <- gj_file$features[[k]]$properties$name
+}
+if(!is.null(gj_file$features[[k]]$geometry$coordinates)){
+Coordinates[k] <- paste(gj_file$features[[k]]$geometry$coordinates[1], gj_file$features[[k]]$geometry$coordinates[2], sep = "_")
+}
+if(!is.null(gj_file$features[[k]]$properties$"addr:street")){
+Street[k] <- gj_file$features[[k]]$properties$"addr:street"
+}
+if(!is.null(gj_file$features[[k]]$properties$"addr:housenumber")){
+House_number[k] <- gj_file$features[[k]]$properties$"addr:housenumber"
+}
+if(!is.null(gj_file$features[[k]]$properties$"addr:postcode")){
+ZIP_code[k] <- gj_file$features[[k]]$properties$"addr:postcode"
+}
+}
+
+#Coordinates of Data_total and and Data_sorted connected with "_" for a more compact
+#data structure used for the templates of the field validations
+
+Data_total <- cbind(Type_amenity, Type_leisure, Type_sport, Type_landuse, Type_natural, Type_office, Type_shop, Type_vending, Type_craft, Type_tourism, Type_highway, Type_railway, Type_aeroway, Name, Coordinates, Street, House_number, ZIP_code)
+
+
+col_count <- 0
+
+for(a in categories){
+eval(parse(text=paste0("col_del <- NULL\ncol_count <- col_count + 1\ncol_del <- c(-1:-13)[-col_count]\nData_",a," <- Data_total[order(Type_",a,"),]\nData_",a," <- Data_",a,"[,col_del]\nData_",a," <- Data_",a,"[(Data_",a,"[,1] != '0'),]\nif(!is.null(colnames(Data_",a,")))\ncolnames(Data_",a,")[1] <- 'Type'")))
+}
+
+Data_sorted <- rbind(Data_amenity,Data_leisure, Data_sport, Data_landuse, Data_natural, Data_office, Data_shop, Data_vending, Data_craft, Data_tourism, Data_highway, Data_railway, Data_aeroway)
+rownames(Data_sorted) <- c()
+
+j <- 1
+
+Liste <- list()
+j <- 1
+data_part <- matrix(0, 1, length(Data_sorted[1,]))
+data_part <- rbind(data_part, Data_sorted[1,])
+data_part <- matrix(data_part[-1,],1,)
+colnames(data_part)[1:6] <- c("Type", "Name", "Coordinates", "Street", "House_number", "ZIP_code")
+
+
+for(i in 1:(length(Data_sorted[,1])-1)){
+
+if(Data_sorted[i,1] != Data_sorted[i+1,1]){
+Liste[[j]] <- data_part
+data_part <- matrix(0, 1, length(Data_sorted[1,]))
+j <- j+1
+}
+data_part <- rbind(data_part,Data_sorted[i+1,])
+
+if(data_part[1,3]==0){
+
+if(length(data_part[,1]) > 2)
+data_part <- data_part[-1,]
+
+else{
+data_part <- matrix(data_part[-1,],1,)
+colnames(data_part)[1:6] <- c("Type", "Name", "Coordinates", "Street", "House_number", "ZIP_code")
+}}
+}
+Liste[[j]] <- data_part
+
+String <- list()
+for(i in 1:length(Liste)){
+String[[i]] <- Liste[[i]][,3]
+}
+
+
+#deleting of the "_" connection sign between the coordinates
+#for plotting purposes
+
+Transform_String_coords <- function(String){
+characters <- 0
+lon <- 0
+lat <- 0
+plotlist <- list()
+for (k in 1:length(String)){
+characters <- strsplit(String[[k]], "")
+for (j in 1:length(characters)){
+for (i in 1:length(characters[[j]])){
+if (characters[[j]][i] == "_"){
+lon[j] <- paste(characters[[j]][1:(i-1)], collapse="")
+lat[j] <- paste(characters[[j]][(i+1):(length(characters[[j]]))], collapse = "")
+}}}
+plotlist[[k]] <- cbind(lon,lat)
+lon <- 0
+lat <- 0
+characters <- 0
+}
+return(plotlist)
+}
+
+Plotlist <- Transform_String_coords(String)
+
+lng <- 0
+lat <- 0
+lab <- 0
+
+for (i in 1:length(Plotlist)){
+lng <- c(lng, Plotlist[[i]][,1])
+lat <- c(lat, Plotlist[[i]][,2])
+lab <- c(lab, Liste[[i]][,1])
+}
+
+lng <- lng[-1]
+lat <- lat[-1]
+lab <- lab[-1]
+
+
+df <- data.frame(lng, lat, lab)
+df$lab <- factor(df$lab)
+df$lng <- as.numeric(paste(df$lng))
+df$lat <- as.numeric(paste(df$lat))
+
+Box_plot <- data.frame(x = c(11.569, 11.569, 11.575, 11.575, 11.569), y = c(48.147, 48.151, 48.151, 48.147, 48.147))
+
+library(png)
+
+#please download the map from openstreetmap.org/export in png format
+#insert coordinates anti-clockwise beginning with the left coordinate: 11.568, 48.1465, 11.576, 48.1515
+#click the share button on the right and manually adjust the picture to the previously marked window and download the png file to your hard drive
+#insert the path to the png file on your hard drive between the quotation marks and ensure that the path contains .png at the end
+OSM_png <- readPNG("")
+
+
+#clear plot with fewer POIs (POI 15 to POI 36) as an example within paper
+
+plot(c(11.5675, 11.578), c(48.1464, 48.1516), type='n', xlab="Latitude", ylab="Longitude")
+rasterImage(OSM_png, 11.568, 48.1465, 11.576, 48.1515)
+points(df$lng[15:36], df$lat[15:36], pch=c(1:25,33:40)[factor(df$lab[1:20])], lwd = 4, cex = 1.3)
+legend(11.576, 48.15, legend=names(summary(factor(df$lab[15:36]))), pch=c(1:25,33:40), cex=1)
+polygon(Box_plot, col=rgb(1, 0, 0,0.2), lwd = 2)
+text(11.5736, 48.1468, "© OpenStreetMap contributors", fg="white", cex = 1.2)
