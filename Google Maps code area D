@@ -1,0 +1,112 @@
+library(jsonlite)
+
+r_obj <- list()
+Variables <- c("bakery", "bar", "bus_station", "cafe", "convenience_store", "dentist", "doctor", "food", "grocery_or_supermarket", "gym", "hospital", "meal_delivery", "meal_takeaway", "park", "pharmacy", "physiotherapist", "restaurant", "school", "spa", "stadium", "subway_station", "taxi_stand", "train_station", "transit_station", "university")
+
+#Nehme als Ausgangspunkt Theresienstrasse/ Ecke Barerstrasse: 48.148971, 11.571933
+
+for (i in Variables)
+eval(parse(text = paste("r_obj[[i]] <- fromJSON('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=48.148971,11.571933&radius=200&types=", i, "&keyword=&key=')", sep = "")))
+
+ID_list <- list()
+Variables2 <- 0
+
+for (i in 1:length(r_obj)){
+if (r_obj[[i]]$status == "OK"){
+ID_list[[Variables[i]]] <- r_obj[[i]]$results$place_id
+Variables2 <- c(Variables2, Variables[i])
+}}
+
+Variables2 <- Variables2[-1]
+
+Max_Info_Places <- list()
+Zwischenliste <- list()
+
+for (i in 1:length(ID_list)){
+for (j in 1:length(ID_list[[i]])){
+eval(parse(text = paste("Zwischenliste[[j]] <- fromJSON('https://maps.googleapis.com/maps/api/place/details/json?placeid=", ID_list[[i]][j], "&key=')", sep = "")))
+}
+Max_Info_Places[[Variables2[i]]] <- Zwischenliste
+Zwischenliste <- list()
+}
+
+List_dataframe <- list()
+name <- 0
+vicinity <- 0
+lonlat <- 0
+types <- 0
+dataframe <- 0
+Data <- 0
+
+for (i in 1:length(Max_Info_Places)){
+for (j in 1:length(Max_Info_Places[[i]])){
+name[j] <- Max_Info_Places[[i]][[j]]$result$name
+vicinity[j] <- Max_Info_Places[[i]][[j]]$result$vicinity
+lonlat[j] <- paste(Max_Info_Places[[i]][[j]]$result$geometry$location$lat, Max_Info_Places[[i]][[j]]$result$geometry$location$lng, sep = "_")
+types[j] <- paste(Max_Info_Places[[i]][[j]]$result$types, collapse = ", ")
+}
+dataframe <- cbind(name, vicinity, lonlat, types)
+Data <- rbind(Data, dataframe)
+List_dataframe[[Variables2[i]]] <- dataframe
+name <- 0
+vicinity <- 0
+lonlat <- 0
+types <- 0
+}
+
+
+library(xlsx)
+write.xlsx(Data, file="H:/Gispro/Grafiken/Daten_Google_Theresien.xls")
+
+
+
+Punkt_Theresienstrasse <- c(48.148971, 11.571933)
+
+
+library(ggmap)
+
+Theresienstrasse_map = ggmap(get_googlemap(center=c(11.571933, 48.148971), zoom=17, maptype = "terrain"), extent="normal")
+
+Longitude <- 0
+Latitude <- 0
+Factors <- 0
+
+for (i in 1:length(Max_Info_Places)){
+for (j in 1:length(Max_Info_Places[[i]])){
+Longitude <- c(Longitude, Max_Info_Places[[i]][[j]]$result$geometry$location$lng)
+Latitude <- c(Latitude, Max_Info_Places[[i]][[j]]$result$geometry$location$lat)
+Factors <- c(Factors, Variables2[i])
+}}
+
+Longitude <- Longitude[-1]
+Latitude <- Latitude[-1]
+Factors <- Factors[-1]
+
+df <- data.frame(Latitude, Longitude, Factors)
+df$Factors <- factor(df$Factors)
+
+circleFun2 <- function(center = c(0,0),diameter = 1, npoints = 100){
+    r = diameter / 2
+    tt <- seq(0,2*pi,length.out = npoints)
+    xx <- center[1] + r * cos(tt)
+    yy <- center[2] + r * sin(tt) * cos(pi/(180/48.148971))
+    return(data.frame(x = xx, y = yy))
+}
+
+#diameter = 2*(200/(111120*cos(pi/(180/48.148971)))) = 2*0.002697642
+a <- circleFun2(center = c(11.571933,48.148971),diameter = 2*0.002697642, npoints = 100)
+
+#in der Abfrage koennten Punkte enthalten sind, die ausserhalb des Gebiets liegen
+#diese mithilfe des Kreises (=Suchgebiet) ausschließen
+
+library(rgdal)
+
+circpol = SpatialPolygons(list(Polygons(list(Polygon(cbind(a$x,a$y))), ID="circle")))
+sppts = SpatialPoints(cbind(df[,2], df[,1]))
+
+df2 <- df[!is.na(over(sppts,circpol)),]
+
+#Theresienstrasse_map + geom_polygon(aes(x=X1,y=X2), data = df2, colour = "black", fill = "white", alpha = 0.3) + theme_bw() + geom_point(data=df, aes(x=lng, y=lat, shape = df$lab)) + scale_shape_manual(values=1:nlevels(df$lab)) + geom_path(data=a, aes(x=x, y=y))
+
+Theresienstrasse_map + theme_bw() + geom_point(data=df2, aes(x=Longitude, y=Latitude, shape = Factors), colour = "blue", size = 5, stroke = 1.5) + scale_shape_manual(values=1:nlevels(df$Factors)) + geom_polygon(data=a, aes(x=x, y=y), colour = "black", fill = rgb(1, 0, 0,0.2), alpha = 0.3) + labs(x="Longitude", y="Latitude") + theme(axis.title.x = element_text(size = 16)) + theme(axis.title.y = element_text(size = 16)) + theme(legend.text = element_text(size = 14)) + theme(legend.title=element_blank())
+
