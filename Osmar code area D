@@ -313,7 +313,7 @@ points(Daten_var_geloescht$Longitude, Daten_var_geloescht$Latitude, pch=c(1:25,3
 legend(11.576, 48.151, legend=names(summary(factor(Daten_var_geloescht$Typ))), pch=c(1:25,33:40), cex=1.7)
 polygon(Box_plot, col=rgb(1, 0, 0,0.2), lwd = 2)
 contour(kde2d(Daten_var_geloescht$Longitude, Daten_var_geloescht$Latitude), add = TRUE, lwd = 2, col = "blue")
-text(11.574, 48.1467, "© OpenStreetMap contributors", fg="white", cex = 2)
+text(11.574, 48.1467, "Â© OpenStreetMap contributors", fg="white", cex = 2)
 
 #Karte ist hier richtig mit den entsprechendne Koordinaten verankert
 #allerdings muss hier das Seitenverhaeltnis im Fenster noch angepasst werden
@@ -329,11 +329,11 @@ Box2 <- data.frame(x = c(11.568, 11.568, 11.576, 11.576), y = c(48.1465, 48.1515
 
 
 Karte_Raster <- rasterGrob(OSM_png, interpolate=TRUE)
-ggplot(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude)) + annotation_custom(Karte_Raster, xmin=11.568, xmax=11.576, ymin=48.1465, ymax=48.1515) + geom_point(data=Daten_var_geloescht, aes(x=Longitude,y=Latitude, shape = Daten_var_geloescht$Typ), colour = "blue", size = 3) + scale_shape_manual(values=c(1:25,33:60), name = "Variables") + geom_density2d(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude), color = "black", size = 1) + geom_polygon(data=Box2, aes(x=x, y=y), fill = "white", alpha = 0.01) + geom_polygon(data=Box, aes(x=x, y=y), fill = "yellow", alpha = 0.3) + theme(legend.text=element_text(size=14), legend.title=element_text(size = 16, face = "bold")) + annotate("text", x=11.57475, y= 48.1466, label= "© OpenStreetMap contributors", size=5)
+ggplot(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude)) + annotation_custom(Karte_Raster, xmin=11.568, xmax=11.576, ymin=48.1465, ymax=48.1515) + geom_point(data=Daten_var_geloescht, aes(x=Longitude,y=Latitude, shape = Daten_var_geloescht$Typ), colour = "blue", size = 3) + scale_shape_manual(values=c(1:25,33:60), name = "Variables") + geom_density2d(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude), color = "black", size = 1) + geom_polygon(data=Box2, aes(x=x, y=y), fill = "white", alpha = 0.01) + geom_polygon(data=Box, aes(x=x, y=y), fill = "yellow", alpha = 0.3) + theme(legend.text=element_text(size=14), legend.title=element_text(size = 16, face = "bold")) + annotate("text", x=11.57475, y= 48.1466, label= "Â© OpenStreetMap contributors", size=5)
 
 
 #Grafik schoen gross
-ggplot(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude)) + annotation_custom(Karte_Raster, xmin=11.568, xmax=11.576, ymin=48.1465, ymax=48.1515) + geom_point(data=Daten_var_geloescht, aes(x=Longitude,y=Latitude, shape = Daten_var_geloescht$Typ), colour = "blue", size = 5) + scale_shape_manual(values=c(1:25,33:60), name = "Variables") + geom_polygon(data=Box2, aes(x=x, y=y), fill = "white", alpha = 0.01) + geom_polygon(data=Box, aes(x=x, y=y), fill = "yellow", alpha = 0.3) + theme(legend.text=element_text(size=22), legend.title=element_text(size = 20, face = "bold"), legend.key.size = unit(1.5, "cm")) + annotate("text", x=11.57475, y= 48.1466, label= "© OpenStreetMap contributors", size=5)
+ggplot(data=Daten_var_geloescht, aes(x=Longitude, y=Latitude)) + annotation_custom(Karte_Raster, xmin=11.568, xmax=11.576, ymin=48.1465, ymax=48.1515) + geom_point(data=Daten_var_geloescht, aes(x=Longitude,y=Latitude, shape = Daten_var_geloescht$Typ), colour = "blue", size = 5) + scale_shape_manual(values=c(1:25,33:60), name = "Variables") + geom_polygon(data=Box2, aes(x=x, y=y), fill = "white", alpha = 0.01) + geom_polygon(data=Box, aes(x=x, y=y), fill = "yellow", alpha = 0.3) + theme(legend.text=element_text(size=22), legend.title=element_text(size = 20, face = "bold"), legend.key.size = unit(1.5, "cm")) + annotate("text", x=11.57475, y= 48.1466, label= "Â© OpenStreetMap contributors", size=5)
 
 
 #hier ist die Karte bei den Kordinaten nicht richtig verankert
