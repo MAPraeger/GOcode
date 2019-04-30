@@ -3,8 +3,10 @@ library(jsonlite)
 r_obj <- list()
 Variables <- c("bakery", "bar", "bus_station", "cafe", "convenience_store", "dentist", "doctor", "food", "grocery_or_supermarket", "gym", "hospital", "meal_delivery", "meal_takeaway", "park", "pharmacy", "physiotherapist", "restaurant", "school", "spa", "stadium", "subway_station", "taxi_stand", "train_station", "transit_station", "university")
 
-#Nehme als Ausgangspunkt Theresienstrasse/ Ecke Barerstrasse: 48.148971, 11.571933
+#The center of the query is located at: 48.148971, 11.571933
+#and the search area is circular around the center with radius = 200 metres
 
+#Please insert your API key after the expression "&key="
 for (i in Variables)
 eval(parse(text = paste("r_obj[[i]] <- fromJSON('https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=48.148971,11.571933&radius=200&types=", i, "&keyword=&key=')", sep = "")))
 
@@ -20,14 +22,16 @@ Variables2 <- c(Variables2, Variables[i])
 Variables2 <- Variables2[-1]
 
 Max_Info_Places <- list()
-Zwischenliste <- list()
+intermediate_list <- list()
 
+#Second query to discover additional details of each spatial data point
+#Please insert your API key after the expression "&key="
 for (i in 1:length(ID_list)){
 for (j in 1:length(ID_list[[i]])){
-eval(parse(text = paste("Zwischenliste[[j]] <- fromJSON('https://maps.googleapis.com/maps/api/place/details/json?placeid=", ID_list[[i]][j], "&key=')", sep = "")))
+eval(parse(text = paste("intermediate_list[[j]] <- fromJSON('https://maps.googleapis.com/maps/api/place/details/json?placeid=", ID_list[[i]][j], "&key=')", sep = "")))
 }
-Max_Info_Places[[Variables2[i]]] <- Zwischenliste
-Zwischenliste <- list()
+Max_Info_Places[[Variables2[i]]] <- intermediate_list
+intermediate_list <- list()
 }
 
 List_dataframe <- list()
@@ -55,17 +59,18 @@ types <- 0
 }
 
 
+#Data can be written on your hard drive, please enter the path to your hard drive below
+#and make sure that it ends with .xls
 library(xlsx)
-write.xlsx(Data, file="H:/Gispro/Grafiken/Daten_Google_Theresien.xls")
+write.xlsx(Data, file="")
 
 
-
-Punkt_Theresienstrasse <- c(48.148971, 11.571933)
+Center_areaD <- c(48.148971, 11.571933)
 
 
 library(ggmap)
 
-Theresienstrasse_map = ggmap(get_googlemap(center=c(11.571933, 48.148971), zoom=17, maptype = "terrain"), extent="normal")
+areaD_map = ggmap(get_googlemap(center=c(11.571933, 48.148971), zoom=17, maptype = "terrain"), extent="normal")
 
 Longitude <- 0
 Latitude <- 0
@@ -96,17 +101,14 @@ circleFun2 <- function(center = c(0,0),diameter = 1, npoints = 100){
 #diameter = 2*(200/(111120*cos(pi/(180/48.148971)))) = 2*0.002697642
 a <- circleFun2(center = c(11.571933,48.148971),diameter = 2*0.002697642, npoints = 100)
 
-#in der Abfrage koennten Punkte enthalten sind, die ausserhalb des Gebiets liegen
-#diese mithilfe des Kreises (=Suchgebiet) ausschließen
-
 library(rgdal)
 
 circpol = SpatialPolygons(list(Polygons(list(Polygon(cbind(a$x,a$y))), ID="circle")))
 sppts = SpatialPoints(cbind(df[,2], df[,1]))
 
+#spatial data points lying outside the query circle can be deleted
+#via overlay with the circle "circpol" (correction of errors of the query results)
 df2 <- df[!is.na(over(sppts,circpol)),]
 
-#Theresienstrasse_map + geom_polygon(aes(x=X1,y=X2), data = df2, colour = "black", fill = "white", alpha = 0.3) + theme_bw() + geom_point(data=df, aes(x=lng, y=lat, shape = df$lab)) + scale_shape_manual(values=1:nlevels(df$lab)) + geom_path(data=a, aes(x=x, y=y))
-
-Theresienstrasse_map + theme_bw() + geom_point(data=df2, aes(x=Longitude, y=Latitude, shape = Factors), colour = "blue", size = 5, stroke = 1.5) + scale_shape_manual(values=1:nlevels(df$Factors)) + geom_polygon(data=a, aes(x=x, y=y), colour = "black", fill = rgb(1, 0, 0,0.2), alpha = 0.3) + labs(x="Longitude", y="Latitude") + theme(axis.title.x = element_text(size = 16)) + theme(axis.title.y = element_text(size = 16)) + theme(legend.text = element_text(size = 14)) + theme(legend.title=element_blank())
+areaD_map + theme_bw() + geom_point(data=df2, aes(x=Longitude, y=Latitude, shape = Factors), colour = "blue", size = 5, stroke = 1.5) + scale_shape_manual(values=1:nlevels(df$Factors)) + geom_polygon(data=a, aes(x=x, y=y), colour = "black", fill = rgb(1, 0, 0,0.2), alpha = 0.3) + labs(x="Longitude", y="Latitude") + theme(axis.title.x = element_text(size = 16)) + theme(axis.title.y = element_text(size = 16)) + theme(legend.text = element_text(size = 14)) + theme(legend.title=element_blank())
 
