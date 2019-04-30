@@ -1,6 +1,7 @@
-#Code for the OSM query at https://overpass-turbo.eu
+#Code for the OSM query for area D at https://overpass-turbo.eu
 #Data can be downloaded on your hard drive
-#Code of this project can be used to process the data and plot the results
+#Code for processing the downloaded data and plotting the results
+#can be found within the file "Overpass processing area D"
 
 (
 node
