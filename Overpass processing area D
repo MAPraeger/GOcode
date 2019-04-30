@@ -5,7 +5,7 @@
 library(geojsonR)
 
 #please download the OSM data from https://overpass-turbo.eu/ in GeoJSON format
-#Code can be found within the file "Overpass query within this project"
+#Code can be found within the file "Overpass query code area D" within this project
 #insert the path to the data on your hard drive between the quotation marks and ensure that the path contains .geojson at the end
 gj_file <- FROM_GeoJson(url_file_string = "")
 
